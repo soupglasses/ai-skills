@@ -7,7 +7,7 @@ usage() {
   cat <<'EOF'
 Usage: bin/install [--apply]
 
-Links instructions/CLAUDE.md and each skills/<name>/ into the Claude Code
+Links instructions/CLAUDE.md, book/, and each skills/<name>/ into the Claude Code
 configuration directory ($CLAUDE_CONFIG_DIR, default ~/.claude).
 
 Without --apply, prints what would change and exits.
@@ -55,6 +55,8 @@ link() {
 }
 
 link "$root/instructions/CLAUDE.md" "$target/CLAUDE.md"
+# Skills cite the book as ../../book, which resolves here from an installed skill.
+link "$root/book" "$target/book"
 
 for skill in "$root"/skills/*/; do
   skill=${skill%/}

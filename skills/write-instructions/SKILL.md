@@ -6,7 +6,7 @@ description: Write or revise standing instructions for an agent, meaning a skill
 # Write instructions
 
 The reader cannot ask what was meant and acts on every word. Numbers are entries in
-[05 Rules](book/05-rules.md).
+[05 Rules](../../book/05-rules.md).
 
 **Before writing.** State the behaviour wanted and the behaviour without the rule. If they
 match, write nothing (5.8). Read the rules already covering the case (5.6). Place the rule:
@@ -36,8 +36,8 @@ the whole file for contradiction and repetition. A revision that only adds lines
 **A skill** is `skills/<name>/SKILL.md`. `name` is lowercase letters, digits, and hyphens,
 and equals the directory name. `description` is third person, at most 1,024 characters, and
 says what the skill does and when to use it: the agent sees only that line when choosing.
-In this repository, link `book -> ../../book` in the skill
-directory to cite the book, and run `bin/install --apply` after adding or renaming a skill.
+In this repository, cite the book as `../../book/<chapter>.md`, and run `bin/install --apply`
+after adding or renaming a skill.
 
 **Check.** For each sentence, name the action it causes, and delete a sentence that causes
 none: the whole file is read on every load, and a longer one is followed less well (5.8).

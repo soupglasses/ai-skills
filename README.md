@@ -14,7 +14,8 @@ agent work goes wrong.
 | `skills/write-instructions` | Write or revise a skill, a `CLAUDE.md`, or a subagent prompt |
 
 Rules cite book entries by number, so a rule traces to its reason and a review finding to
-its rule. Each skill directory links to `book/` and `decisions/`.
+its rule. Skills link to the book as `../../book/`, which works on GitHub and, once
+installed, through the `book` link in the configuration directory.
 
 ```sh
 bin/install          # print what would change
