@@ -63,10 +63,11 @@ An issue follows the same parts: goal, what is known, open questions.
 
 ## Before showing it
 
-Answer every Check in [01 Contexts](book/01-contexts.md). Replace every placeholder with its
-value (entry 3.1 of [03](book/03-literal-reading.md)). Make each claim match the diff and
-the command output (entry 4.6 of [04](book/04-evidence.md)). End a pull request, issue, or
-comment with the signature from the global instructions.
+- Read it as someone who never saw the conversation. It does not mention the request or
+  these instructions, names nothing they have not seen, holds nothing private, and keeps
+  the public links they need.
+- Replace every placeholder with its value.
+- Make each claim match the diff and the command output.
+- End a pull request, issue, or comment with the signature from the global instructions.
 
-This skill does not publish. The maintainer reviews the preview first, as the
-[publishing decision](decisions/04-publication.md) requires.
+This skill does not publish.
