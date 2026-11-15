@@ -28,6 +28,8 @@
 | 1.36 | MutatingAdmissionPolicy, RBAC on `nodes/pods`, `nodes/healthz`, `nodes/configz` |
 | 1.37 | `metrics.k8s.io/v1`, `storagemigration.k8s.io/v1`, `podCertificate` volume, HPA `behavior.scaleUp.tolerance` |
 
-Ingress is frozen but not deprecated, so no warning reports it. The Kubernetes docs
-recommend Gateway API (`gateway.networking.k8s.io/v1`) instead, and the ingress-nginx
-controller gets no releases or security fixes after March 2026.
+## Best practice
+
+- Gateway API over `Ingress`, which is frozen. Avoid deprecated ingress-nginx.
+- An init container over `gitRepo` volumes, disabled from 1.36.
+- No `seccomp.security.alpha.kubernetes.io` annotations, which no longer function.

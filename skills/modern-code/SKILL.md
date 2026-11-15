@@ -43,10 +43,14 @@ Every reference has this shape, so a new language is one new file:
 - **Modernize:** a tool that reports or rewrites older forms, or where warnings appear
 
 | Since | Prefer |
+
+## Best practice
+
+- `new` over `old`, and why in a few words: removals, and advice no tool or warning reports
 ```
 
 A row lists, as short keywords, the stable forms a version added that replace an older way
 of writing the same thing. A feature with no older equivalent has no row. Each keyword
 comes from the release notes, not from memory. Rows start at releases from about 2019,
-since models already write the forms older than that. A note below the table is only for an
-older form that no Modernize tool or warning reports.
+since models already write the forms older than that. Best practice is short bullets,
+one fact each.

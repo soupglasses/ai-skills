@@ -18,3 +18,8 @@
 | 3.13 | `copy.replace`, `@warnings.deprecated`, type parameter defaults `[T = int]`, `TypeIs`, `Path.full_match`, `Queue.shutdown` |
 | 3.14 | `t"..."` where the consumer must escape values, unquoted forward references, `except A, B:`, `compression.zstd`, `Path.copy`, `Path.move`, `uuid.uuid7`, `asyncio.run` |
 | 3.15 | `lazy import`, `frozendict`, `sentinel()`, `[*xs for xs in lists]`, `re.prefixmatch` |
+
+## Best practice
+
+- Removed in 3.12 and 3.13: `imp` -> `importlib`, `asyncore` -> `asyncio`, `pipes` ->
+  `subprocess`, `distutils` -> `setuptools`.

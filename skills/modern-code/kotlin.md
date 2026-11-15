@@ -22,3 +22,9 @@
 | 2.2 | guard conditions `is X if cond ->`, `break`/`continue` in lambdas, `$$"""..."""`, `Base64` and `toHexString` without opt-in, `-jvm-default` |
 | 2.3 | nested `typealias`, data-flow exhaustive `when`, `return` in an elvis expression body, `kotlin.time.Clock`, `kotlin.time.Instant` |
 | 2.4 | context parameters, explicit backing fields `field =`, `@all:` annotation target, `kotlin.uuid.Uuid`, `toBigInteger()`, `isSorted()` |
+
+## Best practice
+
+- `uppercase()`, `lowercase()`, `appendLine()` over `toUpperCase()`, `toLowerCase()`,
+  `appendln()`, which are errors from 2.1.
+- Context parameters over context receivers, unsupported from 2.3.20.
