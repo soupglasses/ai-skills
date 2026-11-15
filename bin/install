@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# Link the global instructions and every skill in this checkout into Claude Code.
+# Prints the plan by default; pass --apply to make the changes.
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: bin/install [--apply]
+
+Links instructions/CLAUDE.md and each skills/<name>/ into the Claude Code
+configuration directory ($CLAUDE_CONFIG_DIR, default ~/.claude).
+
+Without --apply, prints what would change and exits.
+
+An existing file or directory at a destination is moved to
+${XDG_STATE_HOME:-~/.local/state}/ai-skills/backup/<timestamp>/ first.
+Links that point into this checkout but whose skill no longer exists are removed.
+EOF
+}
+
+apply=0
+for arg in "$@"; do
+  case "$arg" in
+    --apply) apply=1 ;;
+    -h | --help) usage; exit 0 ;;
+    *) usage >&2; exit 2 ;;
+  esac
+done
+
+root=$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd -P)
+target=${CLAUDE_CONFIG_DIR:-$HOME/.claude}
+backup=${XDG_STATE_HOME:-$HOME/.local/state}/ai-skills/backup/$(date +%Y%m%dT%H%M%S)
+changes=0
+
+run() {
+  if ((apply)); then "$@"; fi
+}
+
+link() {
+  local source=$1 dest=$2
+  if [[ -L $dest && $(readlink -f "$dest") == "$source" ]]; then
+    return
+  fi
+  changes=$((changes + 1))
+  if [[ -e $dest || -L $dest ]]; then
+    # Backups live outside the skills directory so Claude Code does not load them.
+    local saved=$backup/${dest#"$target"/}
+    echo "backup  $dest -> $saved"
+    run mkdir -p "$(dirname "$saved")"
+    run mv "$dest" "$saved"
+  fi
+  echo "link    $dest -> $source"
+  run mkdir -p "$(dirname "$dest")"
+  run ln -s "$source" "$dest"
+}
+
+link "$root/instructions/CLAUDE.md" "$target/CLAUDE.md"
+
+for skill in "$root"/skills/*/; do
+  skill=${skill%/}
+  [[ -f $skill/SKILL.md ]] || continue
+  link "$skill" "$target/skills/$(basename "$skill")"
+done
+
+for dest in "$target"/skills/*; do
+  [[ -L $dest ]] || continue
+  source=$(readlink -m "$dest")
+  if [[ $source == "$root"/skills/* && ! -f $source/SKILL.md ]]; then
+    changes=$((changes + 1))
+    echo "remove  $dest (skill no longer in this checkout)"
+    run rm "$dest"
+  fi
+done
+
+if ((changes == 0)); then
+  echo "Up to date: $target"
+elif ((apply)); then
+  echo "Done. Start a new Claude Code session to load the changes."
+else
+  echo "Dry run. Re-run with --apply to make these changes."
+fi
