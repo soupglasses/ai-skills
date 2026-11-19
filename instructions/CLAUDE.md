@@ -119,8 +119,8 @@ this session reports it, without vendor or harness prefix: Claude Fable 5.2 give
 
 ## Writing
 
-- Before writing a commit message, pull request, issue, or review comment, load
-  `commit-and-pr`. A project's own convention comes first.
+- Before writing a commit message, pull request, issue, or review comment, or merging a
+  pull request, load `commit-and-pr`. A project's own convention comes first.
 - In documentation, give what the reader needs to act, once, in full sentences. State what
   stays true: versions, current status, and history belong to the files that own them.
 - Put unfinished work in an issue. Use ASCII punctuation in files, with no em dashes.

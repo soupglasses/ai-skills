@@ -9,7 +9,7 @@ agent work goes wrong.
 | [decisions/](decisions/README.md) | What the maintainer has decided, and why |
 | [instructions/CLAUDE.md](instructions/CLAUDE.md) | Global instructions, loaded in every session |
 | `skills/check-behaviour` | Review a session, diff, or files against the book |
-| `skills/commit-and-pr` | Write a commit message, pull request, issue, or comment |
+| `skills/commit-and-pr` | Write a commit message, pull request, issue, or comment, and merge a pull request |
 | `skills/modern-code` | Code and manifests in the idiom of the project's declared version |
 | `skills/write-instructions` | Write or revise a skill, a `CLAUDE.md`, or a subagent prompt |
 

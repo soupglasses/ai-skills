@@ -1,9 +1,9 @@
 ---
 name: commit-and-pr
-description: Write a commit message, a pull request title and description, an issue, or a review comment. Use before drafting any of these.
+description: Write a commit message, a pull request title and description, an issue, or a review comment, and merge a pull request. Use before drafting any of these or merging.
 ---
 
-# Commit and pull request text
+# Commits and pull requests
 
 A project's own convention or template comes first. This is the default without one.
 
@@ -59,7 +59,42 @@ change that touches several subsystems needs more. A draft that runs long usuall
 the diff or defends the solution, so remove that. If it is still long, the change is
 probably several changes, and saying so is more useful than describing them all.
 
+Open a pull request against the default branch when the work is meant for review and
+merge. Open it as a draft only when it is plainly unfinished; pending checks are no reason
+for a draft. Avoid stacking a pull request on another open one. When a later push makes a
+claim in the body untrue, update the body.
+
 An issue follows the same parts: goal, what is known, open questions.
+
+## Review comment
+
+- Comment only on a problem you can show in the changed lines. Leave out praise, guesses,
+  and anything outside the change.
+- Name the problem and its effect, then the change you want, as a suggestion block when it
+  is small.
+- Mark each comment as blocking or non-blocking.
+- Raise one issue per comment, and post none when there is no issue.
+
+````
+issue (blocking): `parse_port` returns `None` for `"0"` because `if not port` treats 0 as
+false, so a config with port 0 is dropped. Compare with `None` instead:
+
+```suggestion
+if port is None:
+```
+````
+
+## Merge
+
+Merge once the checks pass, with the method the project prefers, as its allowed merge
+methods or its history show. Without a preference, squash into one commit whose body is
+written as for a commit:
+
+```
+gh pr merge <number> --squash --subject "<title> (#<number>)" --delete-branch
+```
+
+Pass `--delete-branch` with any method, so the branch is removed on the remote and locally.
 
 ## Before showing it
 
@@ -70,4 +105,4 @@ An issue follows the same parts: goal, what is known, open questions.
 - Make each claim match the diff and the command output.
 - End a pull request, issue, or comment with the signature from the global instructions.
 
-This skill does not publish.
+Publishing, merging included, follows the global instructions on asking first.
