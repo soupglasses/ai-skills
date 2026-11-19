@@ -1,0 +1,175 @@
+#!/usr/bin/env bash
+# Claude Code status line. Reads the session JSON on stdin.
+shopt -s extglob
+unset LC_ALL
+export LC_NUMERIC=C
+
+eval "$(jq -r '@sh "
+model=\(.model.display_name // "unknown" | sub(" \\([^)]*context\\)$"; ""))
+model_id=\(.model.id // "")
+cwd=\(.workspace.current_dir // .cwd // "")
+transcript_path=\(.transcript_path // "")
+cost=\(.cost.total_cost_usd // "")
+lines_added=\(.cost.total_lines_added // 0)
+lines_removed=\(.cost.total_lines_removed // 0)
+five_pct=\(.rate_limits.five_hour.used_percentage // "")
+five_resets_at=\(.rate_limits.five_hour.resets_at // "")
+week_pct=\(.rate_limits.seven_day.used_percentage // "")
+week_resets_at=\(.rate_limits.seven_day.resets_at // "")
+ctx_pct=\(.context_window.used_percentage // "")
+ctx_size=\(.context_window.context_window_size // "")
+cache_hit=\(.prompt_cache.hit_ratio // "")
+cache_warm=\(.prompt_cache.warm // false)
+cache_expires_at=\(.prompt_cache.expires_at // "" | if type == "number" then floor else . end)
+cache_ttl=\(.prompt_cache.ttl // "5m")
+"')"
+
+RESET='\033[0m'
+C_MODEL='\033[38;5;75m'
+C_GIT='\033[38;5;114m'
+C_AMBER='\033[38;5;221m'
+C_SEP='\033[38;5;240m'
+
+# Green at 0, yellow at 50, red from 100, on the 6x6x6 color cube.
+rate_color() {
+  local p r=5 g=5
+  p=$(printf '%.0f' "$1")
+  ((p < 0)) && p=0
+  ((p > 100)) && p=100
+  if ((p <= 50)); then r=$((p / 10)); else g=$(((100 - p) / 10)); fi
+  printf '\033[38;5;%dm' $((16 + 36 * r + 6 * g))
+}
+
+paint() { printf '%b%s%b' "$1" "$2" "$RESET"; }
+calc() { awk "BEGIN { $1 }"; }
+clock() { date -d "@$1" "+$2" 2>/dev/null || date -r "$1" "+$2" 2>/dev/null; }
+
+# Claude Code estimates cost at Anthropic's list prices. Other endpoints, such
+# as Amazon Bedrock's regional profiles, charge about 10% more.
+markup=1
+case "${CLAUDE_CODE_USE_BEDROCK:-}${CLAUDE_CODE_USE_VERTEX:-}${CLAUDE_CODE_USE_FOUNDRY:-}" in *1* | *true*) markup=1.1 ;; esac
+[[ ${ANTHROPIC_BASE_URL:-https://api.anthropic.com} != https://api.anthropic.com* ]] && markup=1.1
+
+# Session cost is yellow at one Artificial Analysis Intelligence Index task on
+# the current model and red from twice that.
+case "$model_id" in
+*opus-5-5*) task_cost=10.04 ;;
+*opus-5*) task_cost=11.82 ;;
+*sonnet-5-5*) task_cost=10.02 ;;
+*haiku-5-5*) task_cost=0.41 ;;
+*fable-5-1*) task_cost=12.99 ;;
+*fable-5-2*) task_cost=26.54 ;;
+*) task_cost="" ;;
+esac
+
+if [[ -n $cwd ]] && cd "$cwd" 2>/dev/null; then
+  { read -r git_root; read -r git_prefix; } < <(git rev-parse --show-toplevel --show-prefix 2>/dev/null)
+  if [[ -n $git_root ]]; then
+    git_branch=$(git symbolic-ref --short HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null)
+    read -r git_ahead git_behind < <(git rev-list --left-right --count 'HEAD...@{upstream}' 2>/dev/null)
+  fi
+fi
+
+compact_at=${CLAUDE_CODE_AUTO_COMPACT_WINDOW:-$(jq -r '.autoCompactWindow // empty' "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/settings.json" 2>/dev/null)}
+if [[ -z $compact_at ]] || ((ctx_size && ctx_size < compact_at)); then
+  compact_at=$ctx_size
+fi
+
+# total_cost_usd can dip or go missing between renders, so keep it monotonic.
+last_file=/tmp/claude-cost-last-$(printf '%s' "${transcript_path:-$PPID}" | cksum | cut -d' ' -f1)
+[[ -f $last_file ]] && cost=$(awk -v c="${cost:-0}" -v l="$(<"$last_file")" 'BEGIN { print (c > l ? c : l) }')
+[[ -n $cost ]] && printf '%s' "$cost" >"$last_file"
+
+left=()
+if [[ -n $git_root && -n $git_branch ]]; then
+  git_prefix=${git_prefix%/}
+  left+=("$(paint "$C_GIT" "${git_root##*/}${git_prefix:+/$git_prefix}:$git_branch")")
+elif [[ -n $cwd ]]; then
+  left+=("$(paint "$C_GIT" "${cwd/#"$HOME"/"~"}")")
+fi
+
+diff_str=""
+((lines_added > 0)) && diff_str="+$lines_added"
+((lines_removed > 0)) && diff_str+="${diff_str:+ }-$lines_removed"
+[[ -n $diff_str ]] && left+=("$(paint "$C_AMBER" "$diff_str")")
+
+sync_str=""
+((git_ahead > 0)) && sync_str="$git_ahead↑"
+((git_behind > 0)) && sync_str+="$git_behind↓"
+[[ -n $sync_str ]] && left+=("$(paint "$C_AMBER" "$sync_str")")
+
+right=()
+if [[ -n $cost ]] && calc "exit !($cost > 0)"; then
+  color=""
+  [[ -n $task_cost ]] && color=$(rate_color "$(calc "print $cost / (2 * $task_cost) * 100")")
+  right+=("$(paint "$color" "$(calc "printf \"\$%.2f\", $cost * $markup")")")
+fi
+
+# Hit rate while requests keep coming, then minutes until the cached prompt expires.
+if [[ -n $cache_expires_at ]]; then
+  case "$cache_ttl" in
+  *h) ttl_s=$((${cache_ttl%h} * 3600)) ;;
+  *m) ttl_s=$((${cache_ttl%m} * 60)) ;;
+  *) ttl_s=300 ;;
+  esac
+  left_s=$((cache_expires_at - $(date +%s)))
+  if [[ $cache_warm == true && -n $cache_hit ]] && ((left_s > ttl_s - 60)); then
+    hit_pct=$(calc "printf \"%.0f\", $cache_hit * 100")
+    cache_str="$hit_pct%"
+    color=$(rate_color $(((100 - hit_pct) * 4)))
+  elif [[ $cache_warm == true ]] && ((left_s > 0)); then
+    cache_str="$(((left_s + 29) / 60))m"
+    color=$(rate_color $(((ttl_s - left_s) * 100 / ttl_s)))
+  else
+    cache_str=cold
+    color=$(rate_color 100)
+  fi
+  right+=("cache: $(paint "$color" "$cache_str")")
+fi
+
+if [[ -n $five_pct ]]; then
+  str="5h: $(paint "$(rate_color "$five_pct")" "$(printf '%.0f%%' "$five_pct")")"
+  [[ -n $five_resets_at ]] && str+=" ($(clock "$five_resets_at" '%H:%M'))"
+  right+=("$str")
+fi
+if [[ -n $week_pct ]]; then
+  str="7d: $(paint "$(rate_color "$week_pct")" "$(printf '%.0f%%' "$week_pct")")"
+  [[ -n $week_resets_at ]] && str+=" ($(clock "$week_resets_at" '%a %H:%M'))"
+  right+=("$str")
+fi
+
+# Tokens, red at the auto-compaction point.
+if [[ -n $ctx_pct && -n $ctx_size ]]; then
+  tokens=$(calc "printf \"%.0f\", $ctx_pct / 100 * $ctx_size")
+  if ((tokens >= 1000000)); then
+    ctx_str=$(calc "printf \"%.1fm\", $tokens / 1000000")
+  else
+    ctx_str=$(calc "printf \"%.0fk\", $tokens / 1000")
+  fi
+  right+=("ctx: $(paint "$(rate_color "$(calc "print $tokens / $compact_at * 100")")" "$ctx_str")")
+elif [[ -n $ctx_pct ]]; then
+  right+=("ctx: $(paint "$(rate_color "$ctx_pct")" "$(printf '%.0f%%' "$ctx_pct")")")
+fi
+
+right+=("$(paint "$C_MODEL" "$model")")
+
+sep=$(paint "$C_SEP" " | ")
+join() {
+  local out=$1 part
+  shift
+  for part; do out+=$sep$part; done
+  printf '%s' "$out"
+}
+visible_len() {
+  local s=${1//$'\e['*([0-9;])m/}
+  echo "${#s}"
+}
+
+left_str=$(join "${left[@]}")
+right_str=$(join "${right[@]}")
+cols=${COLUMNS:-$(stty size 2>/dev/null </dev/tty | cut -d' ' -f2)}
+((cols > 0)) 2>/dev/null || cols=80
+# Claude Code's frame reserves a few columns on the right.
+pad=$((cols - 4 - $(visible_len "$left_str") - $(visible_len "$right_str")))
+((pad < 1)) && pad=1
+printf '%s%*s%s\n' "$left_str" "$pad" '' "$right_str"

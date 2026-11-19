@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Link the global instructions and every skill in this checkout into Claude Code.
+# Link the global instructions, every skill, and the status line in this checkout into Claude Code.
 # Prints the plan by default; pass --apply to make the changes.
 set -euo pipefail
 
@@ -8,7 +8,8 @@ usage() {
 Usage: bin/install [--apply]
 
 Links instructions/CLAUDE.md, book/, and each skills/<name>/ into the Claude Code
-configuration directory ($CLAUDE_CONFIG_DIR, default ~/.claude).
+configuration directory ($CLAUDE_CONFIG_DIR, default ~/.claude), and sets
+bin/statusline as the status line in its settings.json.
 
 Without --apply, prints what would change and exits.
 
@@ -63,6 +64,19 @@ for skill in "$root"/skills/*/; do
   [[ -f $skill/SKILL.md ]] || continue
   link "$skill" "$target/skills/$(basename "$skill")"
 done
+
+settings=$target/settings.json
+current=$(jq . "$settings" 2>/dev/null || echo '{}')
+merged=$(jq --arg command "$root/bin/statusline" \
+  '.statusLine = {type: "command", command: $command, refreshInterval: 15}' <<<"$current")
+if [[ $merged != "$current" ]]; then
+  changes=$((changes + 1))
+  echo "set     $settings statusLine -> $root/bin/statusline"
+  if ((apply)); then
+    mkdir -p "$target"
+    printf '%s\n' "$merged" >"$settings"
+  fi
+fi
 
 for dest in "$target"/skills/*; do
   [[ -L $dest ]] || continue

@@ -12,6 +12,7 @@ agent work goes wrong.
 | `skills/commit-and-pr` | Write a commit message, pull request, issue, or comment, and merge a pull request |
 | `skills/modern-code` | Code and manifests in the idiom of the project's declared version |
 | `skills/write-instructions` | Write or revise a skill, a `CLAUDE.md`, or a subagent prompt |
+| `bin/statusline` | Status line with git state, estimated session cost (10% higher off Anthropic's API, as on Amazon Bedrock), prompt cache, rate limits, and context |
 
 Rules cite book entries by number, so a rule traces to its reason and a review finding to
 its rule. Skills link to the book as `../../book/`, which works on GitHub and, once
@@ -22,4 +23,5 @@ bin/install          # print what would change
 bin/install --apply  # link into ~/.claude (or $CLAUDE_CONFIG_DIR), backing up what it replaces
 ```
 
-Keep this checkout in place, and start a new session after installing.
+The installer and the status line need `jq`. Keep this checkout in place, and start a new
+session after installing.
