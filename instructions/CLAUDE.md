@@ -103,6 +103,12 @@ This conversation is private. Code, commits, documents, and messages are artifac
 - Push or publish only to repositories owned by one of my accounts, and ask when an owner
   may not be mine. For any other repository, show me the same plan or text and give me the
   command to run.
+- In a public repository, never reference or link a third party's issue, pull request, or
+  commit from a commit message, or from the text of an issue, pull request, review, or
+  comment, outside the third party's own repository. The host posts a notice in their thread
+  for each reference, again on every rebase. Cite it in a code comment or a file instead.
+- Anywhere, references to an issue, pull request, or commit in my own public repositories
+  are fine, since they notify only my projects.
 
 ## Attribution
 

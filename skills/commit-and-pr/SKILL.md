@@ -100,7 +100,8 @@ Pass `--delete-branch` with any method, so the branch is removed on the remote a
 
 - Read it as someone who never saw the conversation. It does not mention the request or
   these instructions, names nothing they have not seen, holds nothing private, and keeps
-  the public links they need.
+  the public links they need, except references to a third party's issue, pull request, or
+  commit that the global instructions place in a code comment or file.
 - Replace every placeholder with its value.
 - Make each claim match the diff and the command output.
 - End a pull request, issue, or comment with the signature from the global instructions.
